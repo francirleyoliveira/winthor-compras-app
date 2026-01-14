@@ -7,132 +7,388 @@
     <title>Winthor Compras</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* Um pouco de estilo extra para ficar bonito */
         body {
-            background-color: #f8f9fa;
+            background-color: #f0f2f5;
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        .card {
-            border-radius: 15px;
+        /* Layout 1: Cabeçalho e Filtros */
+        .header-app {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .header-app {
-            background-color: #2c3e50;
-            color: white;
-            padding: 20px;
-            border-radius: 0 0 15px 15px;
+        .card-filtros {
+            background-color: #fff;
+            border: none;
+            border-radius: 10px;
             margin-bottom: 20px;
+            display: none;
+            /* Começa oculto */
         }
 
-        .estoque-baixo {
-            color: red;
-            font-weight: bold;
+        /* Tabela */
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
+
+        .badge-revenda {
+            background-color: #28a745;
+            font-size: 0.7em;
+        }
+
+        .badge-excluido {
+            background-color: #dc3545;
+            font-size: 0.7em;
+        }
+
+        /* Layout 2: Modal de Detalhes */
+        .modal-header {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .card-kpi {
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            height: 100%;
+        }
+
+        .card-kpi h6 {
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+        }
+
+        .card-kpi .valor {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .card-kpi.alerta .valor {
+            color: #dc3545;
+        }
+
+        /* Vermelho para estoque baixo */
+        .card-kpi.sucesso .valor {
+            color: #28a745;
+        }
+
+        /* Verde para vendas boas */
     </style>
 </head>
 
 <body>
 
-    <div class="header-app text-center">
-        <h3>🛒 Compras Winthor</h3>
-        <p class="mb-0">Módulo de Análise de Produtos</p>
+    <div class="header-app">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0"><i class="fas fa-shopping-cart me-2"></i>Compras Winthor</h4>
+                <small>Módulo de Análise de Produtos</small>
+            </div>
+        </div>
     </div>
 
-    <div class="container">
-        <div class="card p-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title">Lista de Produtos</h5>
-                <button onclick="carregarProdutos()" class="btn btn-primary btn-sm">
-                    🔄 Atualizar
+    <div class="container mb-5">
+
+        <div class="row g-2 mb-3">
+            <div class="col-12 col-md-8">
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="input-busca" class="form-control"
+                        placeholder="Pesquisar por Código, EAN ou Descrição..."
+                        onkeyup="if(event.key === 'Enter') aplicarFiltros()">
+                </div>
+            </div>
+            <div class="col-6 col-md-2">
+                <button class="btn btn-outline-secondary w-100" type="button" onclick="alternarFiltros()">
+                    <i class="fas fa-filter me-1"></i> Filtros
                 </button>
             </div>
+            <div class="col-6 col-md-2">
+                <button class="btn btn-primary w-100" onclick="aplicarFiltros()">
+                    <i class="fas fa-sync-alt me-1"></i> Buscar
+                </button>
+            </div>
+        </div>
 
+        <div id="painel-filtros" class="card card-filtros p-3 shadow-sm">
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <label class="form-label small">Cód. Fornecedor</label>
+                    <input type="number" id="filtro-fornec" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small">Cód. Depto</label>
+                    <input type="number" id="filtro-depto" class="form-control form-control-sm">
+                </div>
+                <div class="col-6 col-md-3">
+                    <label class="form-label small">Cód. Marca</label>
+                    <input type="number" id="filtro-marca" class="form-control form-control-sm">
+                </div>
+                <div class="col-12 col-md-3 d-flex align-items-end">
+                    <div class="form-check me-3">
+                        <input class="form-check-input" type="checkbox" id="chk-revenda" checked>
+                        <label class="form-check-label small" for="chk-revenda">Apenas Revenda</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="chk-excluidos">
+                        <label class="form-check-label small" for="chk-excluidos">Incluir Excluídos</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-container">
             <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                    <thead class="table-dark">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
-                            <th>Cód.</th>
-                            <th>Descrição</th>
-                            <th>Depto</th>
-                            <th>Ação</th>
+                            <th>Produto</th>
+                            <th>Depto / Marca</th>
+                            <th>Fornecedor</th>
+                            <th>Emb.</th>
+                            <th class="text-center">Ação</th>
                         </tr>
                     </thead>
                     <tbody id="tabela-corpo">
-                        <tr>
-                            <td colspan="6" class="text-center text-muted">Carregando dados...</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
+            <div class="text-muted small mt-2" id="contador-registros"></div>
+        </div>
+    </div>
 
-            <div class="text-end text-muted small" id="total-registros"></div>
+    <div class="modal fade" id="modalDetalhes" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="detalhe-titulo">Carregando...</h5>
+                        <small class="text-muted" id="detalhe-subtitulo">...</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-md-3">
+                            <div class="card-kpi" id="card-estoque">
+                                <h6>Estoque Atual</h6>
+                                <div class="valor" id="val-estoque">-</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card-kpi">
+                                <h6>Ped. Pendente</h6>
+                                <div class="valor text-primary" id="val-pedente">-</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card-kpi sucesso">
+                                <h6>Venda (Mês)</h6>
+                                <div class="valor" id="val-venda-mes">-</div>
+                            </div>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <div class="card-kpi">
+                                <h6>Custo Fin.</h6>
+                                <div class="valor small" id="val-custo">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="border-bottom pb-2 mb-3">Histórico de Vendas (Giro)</h6>
+                    <table class="table table-sm table-bordered text-center">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mês Anterior</th>
+                                <th>2 Meses Atrás</th>
+                                <th>3 Meses Atrás</th>
+                                <th>Média Trimestral</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td id="hist-mes1">-</td>
+                                <td id="hist-mes2">-</td>
+                                <td id="hist-mes3">-</td>
+                                <td id="hist-media" class="fw-bold">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="alert alert-info mt-3 small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Última entrada de mercadoria registrada em: <strong id="data-ult-ent">-</strong>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-success">
+                        <i class="fas fa-magic me-1"></i> Sugestão IA
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // URL da sua API Node.js
-        const API_URL = 'http://localhost:3000/api/produtos';
+        const API_BASE = 'http://localhost:3000/api/produtos';
+        let modalDetalhesBS = null;
 
-        // Função para formatar dinheiro (R$)
-        const formatarMoeda = (valor) => {
-            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+        // --- FUNÇÕES DE INTERFACE ---
+
+        function alternarFiltros() {
+            const painel = document.getElementById('painel-filtros');
+            painel.style.display = painel.style.display === 'none' ? 'block' : 'none';
         }
 
-        // Função Principal: Busca dados e monta a tabela
-        async function carregarProdutos() {
-            const tbody = document.getElementById('tabela-corpo');
-            const contador = document.getElementById('total-registros');
+        function formatarMoeda(valor) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor || 0);
+        }
 
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">🔄 Buscando no Winthor...</td></tr>';
+        // --- LÓGICA DE BUSCA (LAYOUT 1) ---
+
+        async function aplicarFiltros() {
+            const tbody = document.getElementById('tabela-corpo');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary"></div><br>Consultando Winthor...</td></tr>';
+
+            // Coletar valores
+            const busca = document.getElementById('input-busca').value;
+            const fornecedor = document.getElementById('filtro-fornec').value;
+            const depto = document.getElementById('filtro-depto').value;
+            const marca = document.getElementById('filtro-marca').value;
+            const revenda = document.getElementById('chk-revenda').checked ? 'S' : 'N';
+            const excluidos = document.getElementById('chk-excluidos').checked ? 'S' : 'N';
+
+            // Montar URL
+            const params = new URLSearchParams({
+                busca, fornecedor, depto, marca,
+                apenas_revenda: revenda,
+                incluir_excluidos: excluidos
+            });
 
             try {
-                // 1. Faz a requisição ao Node.js
-                const resposta = await fetch(API_URL);
-                const json = await resposta.json();
+                const res = await fetch(`${API_BASE}?${params}`);
+                const json = await res.json();
 
-                // 2. Limpa a tabela
                 tbody.innerHTML = '';
+                document.getElementById('contador-registros').innerText = `Encontrados: ${json.total} registros`;
 
-                // 3. Verifica se trouxe dados
-                if (json.dados && json.dados.length > 0) {
-
-                    // 4. Cria uma linha para cada produto
-                    json.dados.forEach(produto => {
-                        const row = document.createElement('tr');
-
-                        // Lógica simples visual: Estoque zerado ou negativo fica vermelho
-                        //const classeEstoque = produto.ESTOQUE_GERAL <= 0 ? 'estoque-baixo' : '';
-
-                        row.innerHTML = `
-                            <td><strong>${produto.CODPROD}</strong></td>
-                            <td>${produto.DESCRICAO}</td>
-                            <td>${produto.CODEPTO}</td>
-                            <td>
-                                <button class="btn btn-sm btn-outline-info">🔍 Detalhes</button>
-                            </td>
-                        `;
-                        tbody.appendChild(row);
-                    });
-
-                    contador.innerText = `Total carregado: ${json.total} produtos`;
-
-                } else {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum produto encontrado.</td></tr>';
+                if (json.dados.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Nenhum produto encontrado.</td></tr>';
+                    return;
                 }
 
-            } catch (erro) {
-                console.error('Erro:', erro);
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">❌ Erro ao conectar com o servidor. Verifique se o Node.js está rodando.</td></tr>';
+                json.dados.forEach(p => {
+                    // Trata status visual
+                    let badges = '';
+                    if (p.DTEXCLUSAO) badges += '<span class="badge badge-excluido me-1">EXCLUÍDO</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>
+                            <div class="fw-bold text-dark">${p.DESCRICAO}</div>
+                            <small class="text-muted">Cód: ${p.CODPROD} | EAN: ${p.CODAUXILIAR || '-'}</small>
+                            <div>${badges}</div>
+                        </td>
+                        <td>
+                            <div class="small">${p.DEPARTAMENTO || 'Sem Depto'}</div>
+                            <small class="text-muted">${p.MARCA || ''}</small>
+                        </td>
+                        <td class="small text-muted">
+                            ${p.FORNECEDOR || '-'}
+                            <br>(Cód: ${p.CODFORNEC || '-'})
+                        </td>
+                        <td class="small">${p.EMBALAGEM}</td>
+                        <td class="text-center">
+                            <button onclick="abrirDetalhes(${p.CODPROD}, '${p.DESCRICAO}')" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Erro de conexão com o servidor.</td></tr>';
             }
         }
 
-        // Carregar automaticamente ao abrir a página
-        document.addEventListener('DOMContentLoaded', carregarProdutos);
+        // --- LÓGICA DE DETALHES (LAYOUT 2) ---
+
+        async function abrirDetalhes(codprod, descricao) {
+            // Inicia o modal
+            if (!modalDetalhesBS) modalDetalhesBS = new bootstrap.Modal(document.getElementById('modalDetalhes'));
+
+            // Limpa dados antigos visualmente
+            document.getElementById('detalhe-titulo').innerText = descricao;
+            document.getElementById('detalhe-subtitulo').innerText = `Cód: ${codprod}`;
+            document.getElementById('val-estoque').innerText = '...';
+
+            modalDetalhesBS.show();
+
+            try {
+                // Busca dados completos (Estoque, Custo, Venda)
+                const res = await fetch(`${API_BASE}/${codprod}/detalhes?filial=1`); // Filial 1 Fixa por enquanto
+
+                if (!res.ok) throw new Error('Erro ao buscar detalhes');
+
+                const dados = await res.json();
+
+                // Preenche KPI Cards
+                const elEstoque = document.getElementById('card-estoque');
+                const valEstoque = document.getElementById('val-estoque');
+                valEstoque.innerText = dados.ESTOQUE_ATUAL;
+
+                // Muda cor se estoque zerado
+                if (dados.ESTOQUE_ATUAL <= 0) {
+                    elEstoque.classList.add('alerta');
+                } else {
+                    elEstoque.classList.remove('alerta');
+                }
+
+                document.getElementById('val-pedente').innerText = dados.PEDIDOS_COMPRA_PENDENTE;
+                document.getElementById('val-venda-mes').innerText = dados.VENDA_MES_ATUAL;
+                document.getElementById('val-custo').innerText = formatarMoeda(dados.CUSTO_FINAL);
+
+                // Preenche Tabela de Giro
+                document.getElementById('hist-mes1').innerText = dados.VENDA_MES_ANTERIOR;
+                document.getElementById('hist-mes2').innerText = dados.VENDA_2_MESES_ATRAS;
+                document.getElementById('hist-mes3').innerText = dados.VENDA_3_MESES_ATRAS;
+
+                // Calcula média simples
+                const media = ((dados.VENDA_MES_ANTERIOR + dados.VENDA_2_MESES_ATRAS + dados.VENDA_3_MESES_ATRAS) / 3).toFixed(2);
+                document.getElementById('hist-media').innerText = media;
+
+                document.getElementById('data-ult-ent').innerText = dados.DATA_ULTIMA_ENTRADA || 'Sem registro';
+
+            } catch (err) {
+                alert('Não foi possível carregar os detalhes do Winthor.');
+                console.error(err);
+            }
+        }
+
+        // Carregar lista inicial ao abrir
+        document.addEventListener('DOMContentLoaded', aplicarFiltros);
+
     </script>
 </body>
 
