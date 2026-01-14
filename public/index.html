@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winthor Compras</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        /* Um pouco de estilo extra para ficar bonito */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-app {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px;
+            border-radius: 0 0 15px 15px;
+            margin-bottom: 20px;
+        }
+
+        .estoque-baixo {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header-app text-center">
+        <h3>🛒 Compras Winthor</h3>
+        <p class="mb-0">Módulo de Análise de Produtos</p>
+    </div>
+
+    <div class="container">
+        <div class="card p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="card-title">Lista de Produtos</h5>
+                <button onclick="carregarProdutos()" class="btn btn-primary btn-sm">
+                    🔄 Atualizar
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Cód.</th>
+                            <th>Descrição</th>
+                            <th>Depto</th>
+                            <th>Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-corpo">
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">Carregando dados...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-end text-muted small" id="total-registros"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // URL da sua API Node.js
+        const API_URL = 'http://localhost:3000/api/produtos';
+
+        // Função para formatar dinheiro (R$)
+        const formatarMoeda = (valor) => {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+        }
+
+        // Função Principal: Busca dados e monta a tabela
+        async function carregarProdutos() {
+            const tbody = document.getElementById('tabela-corpo');
+            const contador = document.getElementById('total-registros');
+
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">🔄 Buscando no Winthor...</td></tr>';
+
+            try {
+                // 1. Faz a requisição ao Node.js
+                const resposta = await fetch(API_URL);
+                const json = await resposta.json();
+
+                // 2. Limpa a tabela
+                tbody.innerHTML = '';
+
+                // 3. Verifica se trouxe dados
+                if (json.dados && json.dados.length > 0) {
+
+                    // 4. Cria uma linha para cada produto
+                    json.dados.forEach(produto => {
+                        const row = document.createElement('tr');
+
+                        // Lógica simples visual: Estoque zerado ou negativo fica vermelho
+                        //const classeEstoque = produto.ESTOQUE_GERAL <= 0 ? 'estoque-baixo' : '';
+
+                        row.innerHTML = `
+                            <td><strong>${produto.CODPROD}</strong></td>
+                            <td>${produto.DESCRICAO}</td>
+                            <td>${produto.CODEPTO}</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-info">🔍 Detalhes</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    contador.innerText = `Total carregado: ${json.total} produtos`;
+
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum produto encontrado.</td></tr>';
+                }
+
+            } catch (erro) {
+                console.error('Erro:', erro);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">❌ Erro ao conectar com o servidor. Verifique se o Node.js está rodando.</td></tr>';
+            }
+        }
+
+        // Carregar automaticamente ao abrir a página
+        document.addEventListener('DOMContentLoaded', carregarProdutos);
+    </script>
+</body>
+
+</html>
